@@ -20,6 +20,24 @@ CI=1 make -C sqlite/conformance run-rust  # use only if snapshot tests are requi
 scripts/diff.sh "SQL" [label]  # compare sqlite3 vs tursodb output
 ```
 
+## TokenSave
+
+Use TokenSave for indexed code navigation when it is available. Start with focused
+symbol queries and read only the source needed for the task:
+
+```bash
+tokensave tool search --query 'symbol_name' --limit 10
+tokensave tool body --symbol 'Type::method'
+tokensave tool callers --symbol 'Type::method' --limit 10
+```
+
+- Run commands from the repository root. Use `tokensave tool` to list tools and `tokensave tool <name> --help` to check parameters.
+- If results are stale after edits or a branch switch, run `tokensave sync` before querying again. If no index exists, use `tokensave init`.
+- Check the current source before editing. Indexed relationships can be incomplete; verify conclusions with source reads and tests.
+- Use `rg` or `rg --files` for text and file searches, unindexed files, or when TokenSave is unavailable. Keep output focused and avoid reading entire large files when a smaller range is enough.
+- Keep `.tokensave/` databases and generated index files out of commits. Token savings never replace required tests or correctness checks.
+- Push changes only to the fork at `git@github.com:atontini/turso.git`; verify the push URL before each push. Never push to the original repository.
+
 ## Testing
 
 ### Running Tests
