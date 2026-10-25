@@ -36,7 +36,13 @@ tokensave tool callers --symbol 'Type::method' --limit 10
 - Check the current source before editing. Indexed relationships can be incomplete; verify conclusions with source reads and tests.
 - Use `rg` or `rg --files` for text and file searches, unindexed files, or when TokenSave is unavailable. Keep output focused and avoid reading entire large files when a smaller range is enough.
 - Keep `.tokensave/` databases and generated index files out of commits. Token savings never replace required tests or correctness checks.
-- Push changes only to the fork at `git@github.com:atontini/turso.git`; verify the push URL before each push. Never push to the original repository.
+
+## Publishing AGENTS.md changes
+
+Push commits that change `AGENTS.md` only to the fork at
+`git@github.com:atontini/turso.git`; verify the push URL before pushing them.
+Never push those commits to the original repository. This restriction applies only to `AGENTS.md` changes;
+follow the user's instructions for other changes.
 
 ## Testing
 
