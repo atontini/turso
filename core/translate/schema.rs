@@ -134,8 +134,9 @@ pub(crate) fn validate_check_expr(
     Ok(())
 }
 
-fn validate_default_expr(expr: &ast::Expr, col: &ColumnDefinition) -> Result<()> {
-    walk_expr(expr, &mut |e: &ast::Expr| -> Result<WalkControl> {
+pub(crate) fn validate_default_expr(expr: &ast::Expr, col: &ColumnDefinition) -> Result<()> {
+    let expr = translate_ident_to_string_literal(expr).unwrap_or_else(|| Box::new(expr.clone()));
+    walk_expr(&expr, &mut |e: &ast::Expr| -> Result<WalkControl> {
         match e {
             ast::Expr::Column { .. }
             | ast::Expr::RowId { .. }
@@ -742,12 +743,7 @@ fn validate_check_types_in_expr(
     Ok(())
 }
 
-fn validate(
-    body: &ast::CreateTableBody,
-    table_name: &str,
-    resolver: &Resolver,
-    conn: &Connection,
-) -> Result<()> {
+fn validate(body: &ast::CreateTableBody, table_name: &str, resolver: &Resolver) -> Result<()> {
     if let ast::CreateTableBody::ColumnsAndConstraints {
         options,
         columns,
@@ -767,18 +763,7 @@ fn validate(
                     ast::ColumnConstraint::Check { expr, .. } => {
                         validate_check_expr(expr, table_name, &column_names, resolver)?;
                     }
-                    ast::ColumnConstraint::Generated { .. }
-                        if !conn.experimental_generated_columns_enabled() =>
-                    {
-                        bail_parse_error!(
-                            "Generated columns require --experimental-generated-columns flag"
-                        );
-                    }
-                    ast::ColumnConstraint::Default(expr) => {
-                        let expr =
-                            translate_ident_to_string_literal(expr).unwrap_or_else(|| expr.clone());
-                        validate_default_expr(&expr, col_i)?
-                    }
+                    ast::ColumnConstraint::Default(expr) => validate_default_expr(expr, col_i)?,
                     ast::ColumnConstraint::Collate { collation_name } => {
                         let collation = resolver.resolve_collation(collation_name.as_str())?;
                         if collation.is_custom() {
@@ -1182,7 +1167,7 @@ pub fn translate_create_table(
     let schema_cookie = resolver.with_schema(database_id, |s| s.schema_version);
     program.begin_write_on_database(database_id, schema_cookie)?;
     let normalized_tbl_name = normalize_ident(tbl_name.name.as_str());
-    validate(&body, &normalized_tbl_name, resolver, connection)?;
+    validate(&body, &normalized_tbl_name, resolver)?;
     let bound_sequence_names = resolver.dialect.binds_names_at_create()
         && bind_default_sequence_names(&mut body, resolver)?;
 
